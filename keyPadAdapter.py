@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 import time
-out = ["eingabe","del"]
+out = ["Delete","Eingabe"]
 
 butonsIn = [19,6]
 butonsOut = [26,13]
@@ -42,7 +42,7 @@ while True:
         GPIO.output(int(x),True)
         for y in butonsIn:
             if GPIO.input(y):
-                print("button")
+                print(out[butonsOut.index(x)])
                 while GPIO.input(y):
                     time.sleep(0.2)
         GPIO.output(int(x),False)

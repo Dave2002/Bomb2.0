@@ -20,7 +20,10 @@ def codeGen(x):
 class logicWindow:
 
     def __init__(self):
-
+        self.timeLable1 = None
+        self.timeLable1 = None
+        self.counter1 = False
+        self.counter2 = False
         # arm/defu labels
         self.timerLable = None
         self.armed = None
@@ -78,6 +81,10 @@ class logicWindow:
         self.root.mainloop()
 
     def reset(self):
+        self.timeLable1 = None
+        self.timeLable1 = None
+        self.counter1 = False
+        self.counter2 = False
         self.clearFrame()
         # arm/defu labels
         self.infoLable = None
@@ -204,15 +211,42 @@ class logicWindow:
                 elif key.keysym == "Delete":
                     self.input = []
                     self.inputLable.configure(text="")
-
+            elif self.selectedGame == "Bunker":
+                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
+                    self.input.append(key.char)
+                elif key.keysym == "Delete":
+                    self.counter1 = True
+                    self.counter2 = False
+                    self.input = []
+                elif key.keysym == "Return":
+                    self.counter2= True
+                    self.counter1 = False
+                    if "".join(self.input) == str(self.exitCode):
+                        self.reset()
+            elif self.selectedGame == "Flage":
+                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
+                    self.input.append(key.char)
+                elif key.keysym == "Delete":
+                    self.setFlagText("red")
+                    self.input=[]
+                elif key.keysym == "Return":
+                    self.setFlagText("blue")
+                    if "".join(self.input) == str(self.exitCode):
+                        self.reset()
 
 
     def startGame(self):
-        self.isInGame = True
-        self.armCode = codeGen(1)
-        self.defCode = codeGen(1)
-        self.armBomb()
-
+        if self.selectedGame == "Bombe":
+            self.isInGame = True
+            self.armCode = codeGen(1)
+            self.defCode = codeGen(1)
+            self.armBomb()
+        elif self.selectedGame == "Bunker":
+            self.isInGame = True
+            self.bunker()
+        elif self.selectedGame == "Flage":
+            self.isInGame = True
+            self.flage()
 
     def clearFrame(self):
         for wi in self.root.winfo_children():
@@ -316,5 +350,55 @@ class logicWindow:
 
     def explosion(self):
         print("boom")
+
+    def flage(self):
+        self.clearFrame()
+        tk.Label(self.root,text="Keine Farbe",bg="black",fg="green",font=("Ubunutu",60)).pack()
+
+    def setFlagText(self,x):
+        self.clearFrame()
+        tk.Label(self.root,text=x,bg="black",fg="green",font=("Ubuntu",60)).pack()
+
+    def bunker(self):
+        self.clearFrame()
+        tk.Label(self.root,text="Bunker",bg="black",fg="green",font=("Ubuntu",60)).pack()
+        tk.Label(self.root,text="Blau",bg="black",fg="green",font=("Ubuntu",60)).place(x=1,y=110)
+        tk.Label(self.root,text="Rot",bg="black",fg="green",font=("Ubuntu",60)).place(x=550,y=110)
+        self.timeLable1 = tk.Label(self.root,text="00:00",fg="green",bg="black",font=("Ubuntu",60))
+        self.timeLable1.place(x=10,y=230)
+        self.timeLable2 = tk.Label(self.root,text="00:00",fg="green",bg="black",font=("Ubuntu",60))
+        self.timeLable2.place(x=550,y=230)
+        threading.Thread(target=self.counterBlue,daemon=True).start()
+        threading.Thread(target=self.counterRed,daemon=True).start()
+
+
+    def counterBlue(self):#
+        counter = 0
+        while self.isInGame:
+            time.sleep(1)
+            if self.counter1:
+                counter = counter+1
+            mins, secs = divmod(counter, 60)
+            timeformat = '{:02d}:{:02d}'.format(mins, secs)
+            self.timeLable1.configure(text=timeformat)
+        if counter > self.selectedTime * 60:
+            print("Blue Wins")
+            tk.Label(self.root,text="Blau hat gewonnen",fg="green",bg="black",font=("Ubuntu",30)).pack()
+            self.counter1 = False
+            self.counter2 = False
+    def counterRed(self):
+        counter = 0
+        while self.isInGame:
+            time.sleep(1)
+            if self.counter2:
+                counter = counter+1
+            mins, secs = divmod(counter, 60)
+            timeformat = '{:02d}:{:02d}'.format(mins, secs)
+            self.timeLable2.configure(text=timeformat)
+            if counter > self.selectedTime*60:
+                print("Red Wins")
+                tk.Label(self.root, text="Rot hat gewonnen", fg="green", bg="black", font=("Ubuntu", 30)).pack()
+                self.counter1 = False
+                self.counter2 = False
 
 tmp = logicWindow()

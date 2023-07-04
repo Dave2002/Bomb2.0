@@ -2,7 +2,22 @@
 import time
 import board
 import neopixel
+import RPi.GPIO as GPIO
 
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(18,GPIO.OUT)
+GPIO.setup(23,GPIO.OUT)
+def outsideBlueOn():
+    GPIO.output(18,True)
+
+def outsideBlueOff():
+    GPIO.output(18,False)
+
+def outsideRedOn():
+    GPIO.output(23,True)
+
+def outsideRedOff():
+    GPIO.output(23,False)
 
 pixels1 = neopixel.NeoPixel(board.D21, 55, brightness=1)
 
@@ -22,6 +37,9 @@ def puls(intervall):
     for x in range(0, 250, intervall):
         pixels1.fill((0, x, 0))
         time.sleep(0.1)
+    for g in range(250,0,-intervall):
+        pixels1.fill((0,x,0))
+        time.sleep(0.1)
     pixels1.fill((0,0,0))
 
 def blink(intervall,color):
@@ -37,3 +55,10 @@ def blink(intervall,color):
         time.sleep(intervall/2)
         pixels1.fill((0,0,0))
         time.sleep(intervall/2)
+
+outsideBlueOn()
+time.sleep(2)
+outsideBlueOff()
+outsideRedOn()
+time.sleep(2)
+outsideRedOff()
