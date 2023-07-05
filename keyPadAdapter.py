@@ -1,9 +1,9 @@
 import RPi.GPIO as GPIO
 import time
-from pynput.keyboard import Key, Controller
-import pyautogui
+#from pynput.keyboard import Key, Controller
+#import pyautogui
 
-keyboard = Controller()
+#keyboard = Controller()
 
 out = ["delete", "enter"]
 
@@ -18,9 +18,9 @@ matrix = [["1", "2", "3", "A"],
           ["*", "0", "/", "D"]]
 
 
-def sendKey(key):
-    with pyautogui.hold(key):
-        pyautogui.sleep(0.1)
+#def sendKey(key):
+    #with pyautogui.hold(key):
+        #pyautogui.sleep(0.1)
 
 
 GPIO.setmode(GPIO.BCM)
@@ -43,7 +43,8 @@ while True:
         GPIO.output(int(x), True)
         for y in inputs:
             if GPIO.input(y):
-                sendKey(matrix[outputs.index(x)][inputs.index(y)])
+                print(matrix[outputs.index(x)][inputs.index(y)])
+                #sendKey(matrix[outputs.index(x)][inputs.index(y)])
                 while GPIO.input(y):
                     time.sleep(0.2)
         GPIO.output(int(x), False)
@@ -52,7 +53,8 @@ while True:
         GPIO.output(int(x), True)
         for y in butonsIn:
             if GPIO.input(y):
-                sendKey(out[butonsOut.index(x)])
+                print(out[butonsOut.index(x)])
+                #sendKey(out[butonsOut.index(x)])
                 while GPIO.input(y):
                     time.sleep(0.2)
         GPIO.output(int(x), False)
