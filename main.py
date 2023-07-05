@@ -3,6 +3,7 @@ import time
 import tkinter as tk
 from tkinter import ttk, PhotoImage, font
 import threading
+from subprocess import call
 
 from armBomb import armBomb
 
@@ -56,28 +57,22 @@ class logicWindow:
         self.isInGame = False
 
         self.root = tk.Tk()
+        self.root.attributes("-fullscreen", True)
         self.ev1 = self.root.bind("<KeyPress>", self.keydown)
         self.ev2 = self.root.bind("<KeyRelease>", self.keyup)
         self.root.title("Foxy´s Bombe")
         self.root.geometry("800x480")
         self.root.configure(background="black")
-        tk.Label(self.root, name="text",text="Spielmodus:", bg="black", fg="green", font=("Ubuntu", 50)).pack()
+        tk.Label(self.root, name="text",text="Spiel2:", bg="black", fg="green", font=("Ubuntu", 50)).pack()
 
-        tk.Label(self.root, name="lable1", text="1:Bombe", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,
-                                                                                                              y=120)
-        tk.Label(self.root, name="lable2", text="2:Bunker", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,
-                                                                                                               y=220)
-        tk.Label(self.root, name="lable3", text="3:Flage", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,
-                                                                                                              y=320)
+        tk.Label(self.root, name="lable1", text="1:Bombe", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,y=120)
+        tk.Label(self.root, name="lable2", text="2:Bunker", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,y=220)
+        tk.Label(self.root, name="lable3", text="3:Flage", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,y=320)
 
-        tk.Label(self.root, name="dont1", text="Rot: Zurück", fg="green", bg="black", font=("Ubuntu", 30)).place(
-            relx=0.0, rely=1.0, anchor='sw')
-        tk.Label(self.root, name="dont2", text="Blau: Bestätigen", fg="green", bg="black", font=("Ubuntu", 30)).place(
-            relx=1.0, rely=1.0, anchor='se')
+        tk.Label(self.root, name="dont1", text="Rot: Zurück", fg="green", bg="black", font=("Ubuntu", 30)).place(relx=0.0, rely=1.0, anchor='sw')
+        tk.Label(self.root, name="dont2", text="Blau: Bestätigen", fg="green", bg="black", font=("Ubuntu", 30)).place(relx=1.0, rely=1.0, anchor='se')
 
         self.selectLable = tk.Label(self.root, text="<--", bg="black", fg="green", font=("calibri light", 40))
-        self.root.iconphoto(False, tk.PhotoImage(file='FoxyWhite.png'))
-
         self.root.mainloop()
 
     def reset(self):
@@ -401,4 +396,5 @@ class logicWindow:
                 self.counter1 = False
                 self.counter2 = False
 
+call(["python", "test.py"])
 tmp = logicWindow()
