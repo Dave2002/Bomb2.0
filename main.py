@@ -63,7 +63,7 @@ class logicWindow:
         self.root.title("Foxy´s Bombe")
         self.root.geometry("800x480")
         self.root.configure(background="black")
-        tk.Label(self.root, name="text",text="Spiel2:", bg="black", fg="green", font=("Ubuntu", 50)).pack()
+        tk.Label(self.root, name="text",text="Spiel4:", bg="black", fg="green", font=("Ubuntu", 50)).pack()
 
         tk.Label(self.root, name="lable1", text="1:Bombe", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,y=120)
         tk.Label(self.root, name="lable2", text="2:Bunker", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,y=220)
