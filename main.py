@@ -23,7 +23,7 @@ def codeGen(x):
 class logicWindow:
 
     def __init__(self):
-
+        threading.Thread(target=self.keyAdapter,daemon=True).start()
         self.timeLable1 = None
         self.timeLable1 = None
         self.counter1 = False
