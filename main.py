@@ -396,5 +396,5 @@ class logicWindow:
                 self.counter1 = False
                 self.counter2 = False
 
-call(["python", "test.py"])
+
 tmp = logicWindow()
