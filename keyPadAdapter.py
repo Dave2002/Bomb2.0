@@ -1,4 +1,5 @@
-import RPi.GPIO as GPIO
+"""
+
 import time
 #from pynput.keyboard import Key, Controller
 import pyautogui
@@ -58,3 +59,4 @@ while True:
                 while GPIO.input(y):
                     time.sleep(0.2)
         GPIO.output(int(x), False)
+"""
