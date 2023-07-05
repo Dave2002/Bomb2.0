@@ -4,8 +4,10 @@ import tkinter as tk
 from tkinter import ttk, PhotoImage, font
 import threading
 from subprocess import call
-
+import RPi.GPIO as GPIO
 from armBomb import armBomb
+from key import key
+
 
 #Led shit adden.
 #Flage und Bunker bauen.
@@ -21,6 +23,7 @@ def codeGen(x):
 class logicWindow:
 
     def __init__(self):
+
         self.timeLable1 = None
         self.timeLable1 = None
         self.counter1 = False
@@ -184,7 +187,7 @@ class logicWindow:
                     self.selectedDiff = None
         else:
             if self.selectedGame == "Bombe":
-                if key.char in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "/"]:
+                if key.char in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
                     if key.char == "/":
                         self.input.append("#")
                     else:
@@ -210,7 +213,7 @@ class logicWindow:
                     self.input = []
                     self.inputLable.configure(text="")
             elif self.selectedGame == "Bunker":
-                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "/"]:
+                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
                     if key.char == "/":
                         self.input.append("#")
                     else:
@@ -225,7 +228,7 @@ class logicWindow:
                     if "".join(self.input) == str(self.exitCode):
                         self.reset()
             elif self.selectedGame == "Flage":
-                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "/"]:
+                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
                     if key.char == "/":
                         self.input.append("#")
                     else:
@@ -238,6 +241,53 @@ class logicWindow:
                     if "".join(self.input) == str(self.exitCode):
                         self.reset()
 
+    def keyAdapter(self):
+        out = ["delete", "enter"]
+
+        butonsIn = [19, 6]
+        butonsOut = [26, 13]
+        inputs = [4, 17, 27, 22]
+        outputs = [24, 25, 12, 16]
+
+        matrix = [["1", "2", "3", "A"],
+                  ["4", "5", "6", "B"],
+                  ["7", "8", "9", "C"],
+                  ["*", "0", "#", "D"]]
+
+        GPIO.setmode(GPIO.BCM)
+
+        for x in outputs:
+            GPIO.setup(int(x), GPIO.OUT)
+
+        for x in butonsOut:
+            GPIO.setup(int(x), GPIO.OUT)
+            GPIO.output(int(x), True)
+
+        for g in inputs:
+            GPIO.setup(int(g), GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+        for g in butonsIn:
+            GPIO.setup(int(g), GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+        while True:
+            for x in outputs:
+                GPIO.output(int(x), True)
+                for y in inputs:
+                    if GPIO.input(y):
+                        self.gameSelectInput(key(matrix[outputs.index(x)][inputs.index(y)],matrix[outputs.index(x)][inputs.index(y)]))
+                        while GPIO.input(y):
+                            time.sleep(0.2)
+                GPIO.output(int(x), False)
+
+            for x in butonsOut:
+                GPIO.output(int(x), True)
+                for y in butonsIn:
+                    if GPIO.input(y):
+                        # print(out[butonsOut.index(x)])
+                        self.gameSelectInput(key("",out[butonsOut.index(x)]))
+                        while GPIO.input(y):
+                            time.sleep(0.2)
+                GPIO.output(int(x), False)
 
     def startGame(self):
         if self.selectedGame == "Bombe":
