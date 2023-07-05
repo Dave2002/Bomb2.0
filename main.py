@@ -397,4 +397,5 @@ class logicWindow:
                 self.counter2 = False
 
 
+threading.Thread(target=call,args=(["python","keyPadAdapter.py"],))
 tmp = logicWindow()
