@@ -57,7 +57,7 @@ class logicWindow:
         self.isInGame = False
 
         self.root = tk.Tk()
-        self.root.attributes("-fullscreen", True)
+        #self.root.attributes("-fullscreen", True)
         self.ev1 = self.root.bind("<KeyPress>", self.keydown)
         self.ev2 = self.root.bind("<KeyRelease>", self.keyup)
         self.root.title("Foxy´s Bombe")
@@ -184,8 +184,11 @@ class logicWindow:
                     self.selectedDiff = None
         else:
             if self.selectedGame == "Bombe":
-                if key.char in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
-                    self.input.append(key.char)
+                if key.char in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "/"]:
+                    if key.char == "/":
+                        self.input.append("#")
+                    else:
+                        self.input.append(key.char)
                     self.inputLable.configure(text="".join(self.input))
                 elif key.keysym == "Return":
                     if "".join(self.input) == self.armCode or "".join(self.input) == self.defCode:
@@ -207,8 +210,11 @@ class logicWindow:
                     self.input = []
                     self.inputLable.configure(text="")
             elif self.selectedGame == "Bunker":
-                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
-                    self.input.append(key.char)
+                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "/"]:
+                    if key.char == "/":
+                        self.input.append("#")
+                    else:
+                        self.input.append(key.char)
                 elif key.keysym == "Delete":
                     self.counter1 = True
                     self.counter2 = False
@@ -219,8 +225,11 @@ class logicWindow:
                     if "".join(self.input) == str(self.exitCode):
                         self.reset()
             elif self.selectedGame == "Flage":
-                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
-                    self.input.append(key.char)
+                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "/"]:
+                    if key.char == "/":
+                        self.input.append("#")
+                    else:
+                        self.input.append(key.char)
                 elif key.keysym == "Delete":
                     self.setFlagText("red")
                     self.input=[]
