@@ -1,60 +1,69 @@
 import RPi.GPIO as GPIO
 import time
-#from pynput.keyboard import Key, Controller
-import pyautogui
+from pynput.keyboard import Key, Controller
+keyboard = Controller()
 
-#keyboard = Controller()
+# Set the Row Pins
+ROW_1 = 24
+ROW_2 = 25
+ROW_3 = 12
+ROW_4 = 16
 
-out = ["delete", "enter"]
+# Set the Column Pins
+COL_1 = 4
+COL_2 = 17
+COL_3 = 27
+COL_4 = 22
 
-butonsIn = [19, 6]
-butonsOut = [26, 13]
-inputs = [4, 17, 27, 22]
-outputs = [24, 25, 12, 16]
-
-matrix = [["1", "2", "3", "A"],
-          ["4", "5", "6", "B"],
-          ["7", "8", "9", "C"],
-          ["*", "0", "/", "D"]]
-
-
-def sendKey(key):
-    with pyautogui.hold(key):
-        pyautogui.sleep(0.1)
-
-
+GPIO.setwarnings(False)
+# BCM numbering
 GPIO.setmode(GPIO.BCM)
 
-for x in outputs:
-    GPIO.setup(int(x), GPIO.OUT)
+# Set Row pins as output
+GPIO.setup(ROW_1, GPIO.OUT)
+GPIO.setup(ROW_2, GPIO.OUT)
+GPIO.setup(ROW_3, GPIO.OUT)
+GPIO.setup(ROW_4, GPIO.OUT)
 
-for x in butonsOut:
-    GPIO.setup(int(x), GPIO.OUT)
-    GPIO.output(int(x), True)
+# Set column pins as input and Pulled up high by default
+GPIO.setup(COL_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(COL_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(COL_3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(COL_4, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-for g in inputs:
-    GPIO.setup(int(g), GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+def sendKey(x):
+    keyboard.press(x)
+    time.sleep(0.1)
+    keyboard.release(x)
+def wait_for(x):
+    while GPIO.input(x) == GPIO.LOW:
+        time.sleep(0.05)
+# function to read each row and each column
+def readRow(line, characters):
+    GPIO.output(line, GPIO.LOW)
+    if GPIO.input(COL_1) == GPIO.LOW:
+        sendKey(characters[0])
+        wait_for(COL_1)
+    if GPIO.input(COL_2) == GPIO.LOW:
+        sendKey(characters[1])
+        wait_for(COL_2)
+    if GPIO.input(COL_3) == GPIO.LOW:
+        sendKey(characters[2])
+        wait_for(COL_3)
+    if GPIO.input(COL_4) == GPIO.LOW:
+        sendKey(characters[3])
+        wait_for(COL_4)
+    GPIO.output(line, GPIO.HIGH)
 
-for g in butonsIn:
-    GPIO.setup(int(g), GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-while True:
-    for x in outputs:
-        GPIO.output(int(x), True)
-        for y in inputs:
-            if GPIO.input(y):
-                print(matrix[outputs.index(x)][inputs.index(y)])
-                #sendKey(matrix[outputs.index(x)][inputs.index(y)])
-                while GPIO.input(y):
-                    time.sleep(0.2)
-        GPIO.output(int(x), False)
-
-    for x in butonsOut:
-        GPIO.output(int(x), True)
-        for y in butonsIn:
-            if GPIO.input(y):
-                print(out[butonsOut.index(x)])
-                #sendKey(out[butonsOut.index(x)])
-                while GPIO.input(y):
-                    time.sleep(0.2)
-        GPIO.output(int(x), False)
+# Endless loop by checking each row
+try:
+    while True:
+        readRow(ROW_1, ["1","2","3","A"])
+        readRow(ROW_2, ["4","5","6","B"])
+        readRow(ROW_3, ["7","8","9","C"])
+        readRow(ROW_4, ["*","0","#","D"])
+        time.sleep(0.1) # adjust this per your own setup
+except KeyboardInterrupt:
+    print("\nKeypad Application Interrupted!")
+    GPIO.cleanup()
