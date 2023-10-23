@@ -5,25 +5,36 @@ import neopixel
 import RPi.GPIO as GPIO
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(18,GPIO.OUT)
+GPIO.setup(20,GPIO.OUT)
 GPIO.setup(23,GPIO.OUT)
-def outsideBlueOn():
-    GPIO.output(18,True)
 
-def outsideBlueOff():
-    GPIO.output(18,False)
-
+stop = False
+def ledOutSideBlink(c):
+    if c == "blue":
+        outsideBlueOn()
+        time.sleep(1)
+        outsideBlueOff()
+    else:
+        outsideRedOn()
+        time.sleep(1)
+        outsideRedOff()
 def outsideRedOn():
+    GPIO.output(20,True)
+    #18 -> 20
+def outsideRedOff():
+    GPIO.output(20,False)
+
+def outsideBlueOn():
     GPIO.output(23,True)
 
-def outsideRedOff():
+def outsideBlueOff():
     GPIO.output(23,False)
 
-pixels1 = neopixel.NeoPixel(board.D21, 55, brightness=1)
+pixels1 = neopixel.NeoPixel(board.D18, 55, brightness=1)
 
 def green():
     pixels1.fill((0,255,0))
-
+    print("test")
 def red():
     pixels1.fill((255, 0, 0))
 
@@ -42,8 +53,12 @@ def puls(intervall):
         time.sleep(0.1)
     pixels1.fill((0,0,0))
 
+
+def off():
+    pixels1.fill((0,0,0))
+
 def blink(intervall,color):
-    while True:
+    while not stop:
         if color == "green":
             green()
         elif color == "red":
@@ -56,9 +71,3 @@ def blink(intervall,color):
         pixels1.fill((0,0,0))
         time.sleep(intervall/2)
 
-outsideBlueOn()
-time.sleep(2)
-outsideBlueOff()
-outsideRedOn()
-time.sleep(2)
-outsideRedOff()

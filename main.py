@@ -1,3 +1,4 @@
+import multiprocessing
 import random
 import time
 import tkinter as tk
@@ -5,15 +6,22 @@ from tkinter import ttk, PhotoImage, font
 import threading
 from subprocess import call
 import RPi.GPIO as GPIO
+
+import pygame
+
+
+
+import led
 from armBomb import armBomb
 
 
 
 #Led shit adden.
 #Flage und Bunker bauen.
-
+pygame.init()
+pygame.mixer.init()
 def codeGen(x):
-    var = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]
+    var = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D"]
     tmp = []
     for g in range(0, x):
         tmp.append(var[random.randint(0, len(var) - 1)])
@@ -23,6 +31,7 @@ def codeGen(x):
 class logicWindow:
 
     def __init__(self):
+        self.blinker = None
         self.timeLable1 = None
         self.timeLable1 = None
         self.counter1 = False
@@ -49,7 +58,7 @@ class logicWindow:
         self.hoehe = [120, 220, 320]
         self.modie = ["Bombe", "Bunker", "Flage"]
         self.diffs = ["Easy", "Medium", "Hard"]
-        self.times = [5, 10, 15]
+        self.times = [1, 10, 15]
         self.selectedGame = None
         self.selectedDiff = None
         self.selectedTime = None
@@ -59,7 +68,8 @@ class logicWindow:
         self.isInGame = False
 
         self.root = tk.Tk()
-        #self.root.attributes("-fullscreen", True)
+        self.root.attributes("-fullscreen", True)
+        self.root.focus_force()
         self.ev1 = self.root.bind("<KeyPress>", self.keydown)
         self.ev2 = self.root.bind("<KeyRelease>", self.keyup)
         self.root.title("Foxy´s Bombe")
@@ -117,7 +127,7 @@ class logicWindow:
                                                                                                                y=220)
         tk.Label(self.root, name="lable3", text="3:Flage", bg="black", fg="green", font=("Ubuntu", 45)).place(x=150,
                                                                                                               y=320)
-
+        self.root.attributes("-fullscreen", True)
         tk.Label(self.root, name="dont1", text="Rot: Zurück", fg="green", bg="black", font=("Ubuntu", 30)).place(
             relx=0.0, rely=1.0, anchor='sw')
         tk.Label(self.root, name="dont2", text="Blau: Bestätigen", fg="green", bg="black", font=("Ubuntu", 30)).place(
@@ -154,7 +164,7 @@ class logicWindow:
                     self.selectLable.place(x=160 + self.getLableWidght(key)[0], y=self.hoehe[int(key.char) - 1])
             elif key.keysym == "Return" and self.selection in range(0,3):
                 if self.current == 0:
-                    self.selectLable.place(x=1000)
+                    self.selectLable.place(x=1111,y=20000)
                     self.setLables(["1:Easy","2:Medium","3:Hard","Schrigkeit"])
                     self.selectedGame = self.modie[self.selection]
                     self.selection = -1
@@ -187,10 +197,7 @@ class logicWindow:
         else:
             if self.selectedGame == "Bombe":
                 if key.char in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
-                    if key.char == "/":
-                        self.input.append("#")
-                    else:
-                        self.input.append(key.char)
+                    self.input.append(key.char)
                     self.inputLable.configure(text="".join(self.input))
                 elif key.keysym == "Return":
                     if "".join(self.input) == self.armCode or "".join(self.input) == self.defCode:
@@ -201,18 +208,32 @@ class logicWindow:
                             self.defuseBomb()
                         else:
                             self.p1Sop = True
+                            self.clearFrame()
+                            led.off()
+                            tk.Label(self.root, fg="green", bg="black", text="Bombe wurde entschärft",
+                                     font=("Ubuntu", 50)).pack()
+                            #tmp = threading.Thread(target=led.blink,daemon=True,args=(3,"blue",))
+                            #tmp.start()
+                            #time.sleep(20)
+                            #tmp.join()
+                            self.reset()
                     else:
                         if not self.armed:
                             self.reduceArmTries()
                             self.input = []
                             self.inputLable.configure(text="")
                         else:
-                            pass
+                            self.clearFrame()
+                            tk.Label(self.root, fg="green", bg="black", text="Bombe ist explodiert",
+                                     font=("Ubuntu", 50)).pack()
+                            self.explosion()
+                            self.reset()
                 elif key.keysym == "Delete":
                     self.input = []
                     self.inputLable.configure(text="")
             elif self.selectedGame == "Bunker":
-                if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
+
+                """if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
                     if key.char == "/":
                         self.input.append("#")
                     else:
@@ -226,7 +247,10 @@ class logicWindow:
                     self.counter1 = False
                     if "".join(self.input) == str(self.exitCode):
                         self.reset()
+                """
             elif self.selectedGame == "Flage":
+
+                """
                 if key.keysym in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "*", "#"]:
                     if key.char == "/":
                         self.input.append("#")
@@ -235,11 +259,20 @@ class logicWindow:
                 elif key.keysym == "Delete":
                     self.setFlagText("red")
                     self.input=[]
+                    led.outsideRedOn()
+                    led.outsideBlueOff()
+                    led.red()
                 elif key.keysym == "Return":
                     self.setFlagText("blue")
+                    led.outsideRedOff()
+                    led.outsideBlueOn()
+                    led.blue()
                     if "".join(self.input) == str(self.exitCode):
+                        led.outsideRedOff()
+                        led.outsideBlueOff()
+                        led.off()
                         self.reset()
-
+            """
 
     def startGame(self):
         if self.selectedGame == "Bombe":
@@ -247,6 +280,7 @@ class logicWindow:
             self.armCode = codeGen(1)
             self.defCode = codeGen(1)
             self.armBomb()
+            self.armTries = 3
         elif self.selectedGame == "Bunker":
             self.isInGame = True
             self.bunker()
@@ -290,6 +324,8 @@ class logicWindow:
 
 
     def armBomb(self):
+        self.blinker = multiprocessing.Process(target=led.blink,daemon=True,args=(3,"yellow",))
+        self.blinker.start()
         self.clearFrame()
         tk.Label(self.root, fg="green", bg="black", text="Bombe scharf stellen", font=("Ubuntu", 50)).pack()
         tk.Label(self.root, fg="green", bg="black", text="Code:", font=("Ubuntu", 15)).place(x=20, y=160)
@@ -304,6 +340,9 @@ class logicWindow:
 
         self.infoLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 30))
         self.infoLable.place(x=10, y=350)
+        #self.blinker = threading.Thread(target=led.blink(2, "yellow", ))
+        #self.blinker.start()
+        print("armbomb")
 
     def reduceArmTries(self):
         if self.armTries > 0:
@@ -323,6 +362,10 @@ class logicWindow:
         self.inputLock = False
 
     def defuseBomb(self):
+        self.blinker.terminate()
+        led.stop = True
+        led.off()
+
         self.clearFrame()
         self.timerLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 50))
         self.timerLable.pack()
@@ -355,6 +398,13 @@ class logicWindow:
             self.explosion()
 
     def explosion(self):
+        self.clearFrame()
+        tk.Label(self.root, fg="green", bg="black", text="Bombe ist explodiert",
+                 font=("Ubuntu", 50)).pack()
+        led.red()
+        time.sleep(20)
+        led.off()
+        self.reset()
         print("boom")
 
     def flage(self):
@@ -409,4 +459,5 @@ class logicWindow:
 
 
 #threading.Thread(target=call,args=(["python","keyPadAdapter.py"],)).start()
+time.sleep(4)
 tmp = logicWindow()
