@@ -1,6 +1,6 @@
 #include all necessary packages to get LEDs to work with Raspberry Pi
 import time
-import board
+from legacy import board
 import neopixel
 import RPi.GPIO as GPIO
 

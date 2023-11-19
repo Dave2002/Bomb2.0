@@ -50,7 +50,7 @@ class armBomb():
                 self.inputLable.configure(text="".join(self.input))
             elif key.keysym == "Return":
                 if "".join(self.input) == self.code:
-                    pass  # show defu bomb
+                    pass
                 else:
                     self.reduceTries()
             elif key.keysym == "Delete":

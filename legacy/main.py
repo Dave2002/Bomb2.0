@@ -5,14 +5,12 @@ import tkinter as tk
 from tkinter import ttk, PhotoImage, font
 import threading
 from subprocess import call
-import RPi.GPIO as GPIO
-
 import pygame
 
 
 
 import led
-from armBomb import armBomb
+from legacy.armBomb import armBomb
 
 
 
@@ -390,6 +388,7 @@ class logicWindow:
             mins, secs = divmod(ctime, 60)
             timeformat = '{:02d}:{:02d}'.format(mins, secs)
             self.timerLable.configure(text=timeformat)
+            
             time.sleep(1)
             ctime -= 1
             if self.p1Sop:

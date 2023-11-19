@@ -1,13 +1,16 @@
 import tkinter as tk
+from legacy import armBomb
+
 
 class logicWindow:
 
     def __init__(self):
         #selection logic
+        self.inputlocked = False
         self.titles = ["Modie","Diff","Zeit"]
         self.pressedKeys = []
         self.hoehe = [120, 220, 320]
-        self.selections = [["Bombe", "Bunker", "Flagge"],["Easy", "Medium", "Hard"],[1, 10, 15]]
+        self.selections = [["Bombe", "Bunker", "Flagge"],["Easy", "Medium", "Hard"],["5 min", "10 min" , "15 min"]]
         self.currentselections = []
         self.current = 0
         self.selection = -1
@@ -45,20 +48,32 @@ class logicWindow:
             self.pressedKeys.remove(key.keysym)
 
     def gameSelectInput(self,key):
-        if key.keysym in ["1","2","3"]:
-            self.selection = int(key.char) - 1
-            self.selectLable.configure(text="<--")
-            self.selectLable.place(x=160 + self.getLableWidght(key)[0], y=self.hoehe[int(key.char) - 1])
-        if key.keysym == "BackSpace":
-            if len(self.currentselections) != 0:
-                self.currentselections.pop()
-                self.selection = -1
-                self.setLables(self.selections[len(self.currentselections)], self.titles[len(self.currentselections)])
-        if key.keysym == "Return":
-            self.currentselections.append(self.selections[len(self.currentselections)][self.selection])
-            self.selection = -1
-            self.setLables(self.selections[len(self.currentselections)],self.titles[len(self.currentselections)])
+        if not self.inputlocked:
+            if key.keysym in ["1","2","3"]:
+                self.selection = int(key.char) - 1
+                self.selectLable.configure(text="<--")
+                self.selectLable.place(x=160 + self.getLableWidght(key)[0], y=self.hoehe[int(key.char) - 1])
 
+            if key.keysym == "BackSpace":
+                if len(self.currentselections) != 0:
+                    self.currentselections.pop()
+                    self.selection = -1
+                    self.setLables(self.selections[len(self.currentselections)], self.titles[len(self.currentselections)])
+
+            if key.keysym == "Return":
+                if len(self.currentselections) == 2:
+                    self.startGame()
+                else:
+                    self.currentselections.append(self.selections[len(self.currentselections)][self.selection])
+                    self.selection = -1
+                    self.setLables(self.selections[len(self.currentselections)],self.titles[len(self.currentselections)])
+
+
+    def startGame(self):
+        self.inputlocked = True
+        self.clearFrame()
+        self.game = armBomb.armBomb(self.root, "123013")
+        pass
     def clearFrame(self):
         for wi in self.root.winfo_children():
             wi.destroy()
@@ -68,15 +83,16 @@ class logicWindow:
             if str(wi) not in [".dont1", ".dont2"]:
                 wi.destroy()
 
+
     #Updates the four lables. Needs a String Array of the lenght of 4
     def setLables(self, x,y):
         for wi in self.root.winfo_children():
             if str(wi) == ".lable1":
-                wi.configure(text=x[0])
+                wi.configure(text="1:"+x[0])
             elif str(wi) == ".lable2":
-                wi.configure(text=x[1])
+                wi.configure(text="2:"+x[1])
             elif str(wi) == ".lable3":
-                wi.configure(text=x[2])
+                wi.configure(text="3:"+x[2])
             elif str(wi) == ".text":
                 wi.configure(text=y)
 
