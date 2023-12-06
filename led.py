@@ -1,14 +1,151 @@
-#include all necessary packages to get LEDs to work with Raspberry Pi
+# include all necessary packages to get LEDs to work with Raspberry Pi
+import threading
 import time
-from legacy import board
+import board
 import neopixel
 import RPi.GPIO as GPIO
 
+
+class Led:
+
+    def __init__(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(20, GPIO.OUT)
+        GPIO.setup(23, GPIO.OUT)
+        self._pixel = neopixel.NeoPixel(board.D18, 55, brightness=1)
+
+        # Variabels for the LED Stripe Blinker
+        self._stripeBlinkerThread = None
+        self._stripeRGB = (0,0,0)
+        self._stripeBlinkerStop = False
+        self._stripeIntervall = 1
+
+        # Blue outside Blinker Variables
+        self._blueBlinkerThread = None
+        self._blueBlinkerStop = False
+        self._blueBlinkerInterval = 1
+
+        # Red outside Blinker Variables
+        self._redBlinkerThread = None
+        self._redBlinkerStop = False
+        self._redBlinkerInterval = 1
+
+    # Simple stuff
+
+    def stopAllBlinkers(self):
+        self.stopRedBlinker()
+        self.stopBlueBlinker()
+        self.stopStripeBlinker()
+
+    def turnOffAll(self):
+        self.turnOffRed()
+        self.pixelFill((0,0,0))
+        self.turnOffBlue()
+
+
+    def turnRedOn(self):
+        GPIO.output(20, True)
+
+    def turnBlueOn(self):
+        GPIO.output(23, True)
+
+    def turnOffBlue(self):
+        GPIO.output(23, False)
+
+    def turnOffRed(self):
+        GPIO.output(20, False)
+
+    def stripeOff(self):
+        self._pixel.fill((0,0,0))
+
+    def pixelFill(self,rgb):
+        self._pixel.fill(rgb)
+        self._stripeRGB = rgb
+
+
+    # Blinker logic
+    def setBlueInterval(self,interval):
+        self._blueBlinkerInterval = interval
+
+    def startBlueBlinker(self):
+        self._blueBlinkerThread = threading.Thread(target=self._blueBlinker,daemon=True)
+        self._blueBlinkerThread.start()
+    def _blueBlinker(self):
+        while not self._blueBlinkerStop:
+            GPIO.output(23, True)
+            time.sleep(self._blueBlinkerInterval/2)
+            GPIO.output(23, False)
+            time.sleep(self._blueBlinkerInterval/2)
+
+    def stopBlueBlinker(self):
+        self._blueBlinkerStop = True
+        try:
+            self._blueBlinkerThread.join()
+        except Exception:
+            pass
+        self._blueBlinkerStop = False
+#        self.turnOffBlue()
+
+    def setRedInterval(self,interval):
+        self._redBlinkerInterval = interval
+
+
+    def startRedBlinker(self):
+        self._redBlinkerThread = threading.Thread(target=self._redBlinker,daemon=True)
+        self._redBlinkerThread.start()
+
+    def _redBlinker(self):
+        while not self._redBlinkerStop:
+            GPIO.output(20, True)
+            time.sleep(self._redBlinkerInterval/2)
+            GPIO.output(20, False)
+            time.sleep(self._redBlinkerInterval/2)
+
+    def stopRedBlinker(self):
+        self._redBlinkerStop = True
+        try:
+            self._redBlinkerThread.join()
+        except Exception:
+            pass
+        self._redBlinkerStop = False
+ #       self.turnOffRed()
+
+
+    def setRGB(self,rgb):
+        self._stripeRGB = rgb
+
+    def setStripInterval(self,intervall):
+        self._stripeIntervall = intervall
+    def startStripeBlinker(self):
+        self._stripeBlinkerThread = threading.Thread(target=self._stripeBlinker,daemon=True)
+        self._stripeBlinkerThread.start()
+
+    def stopStripeBlinker(self):
+        self._stripeBlinkerStop = True
+        try:
+            self._stripeBlinkerThread.join()
+        except Exception:
+            pass
+        self._stripeBlinkerStop = False
+  #      self.stripeOff()
+
+    def _stripeBlinker(self):
+        while not self._stripeBlinkerStop:
+            self._pixel.fill(self._stripeRGB)
+            time.sleep(self._stripeIntervall/2)
+            self._pixel.fill((0,0,0))
+            time.sleep(self._stripeIntervall/2)
+
+
+"""
+
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(20,GPIO.OUT)
-GPIO.setup(23,GPIO.OUT)
+GPIO.setup(20, GPIO.OUT)
+GPIO.setup(23, GPIO.OUT)
 
 stop = False
+
+
 def ledOutSideBlink(c):
     if c == "blue":
         outsideBlueOn()
@@ -18,46 +155,60 @@ def ledOutSideBlink(c):
         outsideRedOn()
         time.sleep(1)
         outsideRedOff()
+
+
 def outsideRedOn():
-    GPIO.output(20,True)
-    #18 -> 20
+    GPIO.output(20, True)
+    # 18 -> 20
+
+
 def outsideRedOff():
-    GPIO.output(20,False)
+    GPIO.output(20, False)
+
 
 def outsideBlueOn():
-    GPIO.output(23,True)
+    GPIO.output(23, True)
+
 
 def outsideBlueOff():
-    GPIO.output(23,False)
+    GPIO.output(23, False)
+
 
 pixels1 = neopixel.NeoPixel(board.D18, 55, brightness=1)
 
+
 def green():
-    pixels1.fill((0,255,0))
+    pixels1.fill((0, 255, 0))
     print("test")
+
+
 def red():
     pixels1.fill((255, 0, 0))
+
 
 def blue():
     pixels1.fill((0, 0, 255))
 
+
 def yellow():
-    pixels1.fill((255,255,0))
+    pixels1.fill((255, 255, 0))
+
 
 def puls(intervall):
     for x in range(0, 250, intervall):
         pixels1.fill((0, x, 0))
         time.sleep(0.1)
-    for g in range(250,0,-intervall):
-        pixels1.fill((0,x,0))
+    for g in range(250, 0, -intervall):
+        pixels1.fill((0, x, 0))
         time.sleep(0.1)
-    pixels1.fill((0,0,0))
+    pixels1.fill((0, 0, 0))
 
 
 def off():
-    pixels1.fill((0,0,0))
+    pixels1.fill((0, 0, 0))
 
-def blink(intervall,color):
+
+def blink(intervall, color):
     while not stop:
         if color == "green":
             green()
@@ -67,7 +218,10 @@ def blink(intervall,color):
             yellow()
         elif color == "blue":
             blue()
-        time.sleep(intervall/2)
-        pixels1.fill((0,0,0))
-        time.sleep(intervall/2)
+        time.sleep(intervall / 2)
+        pixels1.fill((0, 0, 0))
+        time.sleep(intervall / 2)
 
+
+blink(1,"red")
+"""

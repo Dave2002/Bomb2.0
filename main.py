@@ -1,17 +1,18 @@
-import asyncio
 import multiprocessing
 import random
 import time
 import tkinter as tk
 from tkinter import ttk, PhotoImage, font
 import threading
-from subprocess import call
+
 import pygame
 
-#import led
-from legacy.armBomb import armBomb
+# import led
+
 
 # Led shit adden.
+import led
+
 # Flage und Bunker bauen.
 pygame.init()
 pygame.mixer.init()
@@ -25,11 +26,18 @@ def codeGen(x):
     return "".join(tmp)
 
 
+stop = False
+stopLock = False
+
 class logicWindow:
 
     def __init__(self):
+
+        self.ledStuff = led.Led()
+
         self.mp = None
         self.stop = False
+        self.inputLockThread = None
         self.blinker = None
         self.timeLable1 = None
         self.timeLable1 = None
@@ -37,7 +45,7 @@ class logicWindow:
         self.counter2 = False
         # arm/defu labels
         self.timerLable = None
-        self.armed = None
+        self.armed = False
         self.infoLable = None
         self.armCode = None
         self.defCode = None
@@ -92,14 +100,33 @@ class logicWindow:
         self.root.mainloop()
 
     def reset(self):
+        global stop
 
+        self.clearFrame()
 
+        stop = True
+        try:
+            self.mp.join()
+        except Exception:
+            pass
 
-        self.pressedKeys = []
+        self.ledStuff.stopAllBlinkers()
+        self.ledStuff.turnOffAll()
 
+        self.armed = False
+        self.mp = None
+        stop = False
+        self.inputLock = False
+        self.selectedGame = None
+        self.selectedDiff = None
+        self.selectedTime = None
+        self.isInGame = False
+        self.input = []
+        self.selectedGame = None
         self.current = 0
         self.selection = -1
-
+        self.armTries = 3
+        self.bomTries = 3
 
         tk.Label(self.root, name="text", text="Spielmodus:", bg="black", fg="green", font=("Ubuntu", 50)).pack()
 
@@ -127,21 +154,22 @@ class logicWindow:
             self.pressedKeys.remove(key.keysym)
 
     def gameSelectInput(self, key):
-        print(key.keysym)
+        if self.inputLock:
+            return
         if not self.isInGame:
             if key.keysym in ["1", "2", "3"]:
                 if self.selectedGame is None:
-                    print("Game")
+
                     self.selection = int(key.char) - 1
                     self.selectLable.configure(text="<--")
                     self.selectLable.place(x=160 + self.getLableWidght(key)[0], y=self.hoehe[int(key.char) - 1])
                 elif self.selectedDiff is None:
-                    print("diff")
+
                     self.selection = int(key.char) - 1
                     self.selectLable.configure(text="<--")
                     self.selectLable.place(x=160 + self.getLableWidght(key)[0], y=self.hoehe[int(key.char) - 1])
                 elif self.selectedTime is None:
-                    print("time")
+
                     self.selection = int(key.char) - 1
                     self.selectLable.configure(text="<--")
                     self.selectLable.place(x=160 + self.getLableWidght(key)[0], y=self.hoehe[int(key.char) - 1])
@@ -153,15 +181,15 @@ class logicWindow:
                     self.selection = -1
                     self.current = self.current + 1
                 elif self.current == 1:
-                    self.selectLable.place(x=1000,y=213123)
+                    self.selectLable.place(x=1000, y=213123)
                     self.setLables(["1:5Min", "2:10Min", "3:15Min", "Zeit"])
                     self.selectedDiff = self.diffs[self.selection]
                     self.selection = -1
                     self.current = self.current + 1
                 elif self.current == 2:
-                    self.selectLable.place(x=1000,y=123123)
+                    self.selectLable.place(x=1000, y=123123)
                     self.selectedTime = self.times[self.selection]
-                    print(self.selectedGame, self.selectedDiff, self.selectedTime)
+
                     self.clearFrame()
                     self.startGame()
             elif key.keysym == "Delete":
@@ -169,13 +197,13 @@ class logicWindow:
                     self.setLables(["1:Bomb", "2:Bunker", "3:Flag", "Modus:"])
                     self.current = self.current - 1
                     self.selection = -1
-                    self.selectLable.place(x=1000,y=1200)
+                    self.selectLable.place(x=1000, y=1200)
                     self.selectedGame = None
                 elif self.current == 2:
                     self.setLables(["1:Easy", "2:Medium", "3:Hard", "Schrigkeit"])
                     self.current = self.current - 1
                     self.selection = -1
-                    self.selectLable.place(x=1000,y=123123)
+                    self.selectLable.place(x=1000, y=123123)
                     self.selectedDiff = None
         else:
             if self.selectedGame == "Bombe":
@@ -183,14 +211,24 @@ class logicWindow:
                     self.input = []
                     self.inputLable.configure(text="")
                 elif key.keysym == "Return":
-                    if "".join(self.input) == self.armCode:
-                        self.defuseBomb()
+                    if not self.armed:
+                        if "".join(self.input) == self.armCode:
+                            self.armed = True
+                            self.input = []
+                            self.defuseBomb()
+                        else:
+                            self.reduceTries()
+                    else:
+                        if "".join(self.input) == self.defCode:
+                            self.input = []
+
+                            self.reset()
+                        else:
+
+                            self.reduceTries()
                 else:
                     self.input.append(key.keysym)
                     self.inputLable.configure(text="".join(self.input))
-
-
-
 
     def startGame(self):
         if self.selectedGame == "Bombe":
@@ -200,9 +238,11 @@ class logicWindow:
             self.armBomb()
             self.armTries = 3
         elif self.selectedGame == "Bunker":
+            pass
             self.isInGame = True
             self.bunker()
         elif self.selectedGame == "Flage":
+            pass
             self.isInGame = True
             self.flage()
 
@@ -242,23 +282,27 @@ class logicWindow:
 
     def armBomb(self):
         self.clearFrame()
+        self.ledStuff.startBlueBlinker()
+        self.ledStuff.setRGB((0, 0, 255))
+        self.ledStuff.startStripeBlinker()
         tk.Label(self.root, fg="green", bg="black", text="Bombe scharf stellen", font=("Ubuntu", 50)).pack()
         tk.Label(self.root, fg="green", bg="black", text="Code:", font=("Ubuntu", 15)).place(x=20, y=160)
         tk.Label(self.root, fg="green", bg="black", text=self.armCode, font=("Ubuntu", 15)).place(x=100, y=160)
         tk.Label(self.root, fg="green", bg="black", text="Eingabe:", font=("Ubuntu", 30)).place(x=10, y=220)
         tk.Label(self.root, fg="green", bg="black", text="Versuche:", font=("Ubuntu", 30)).place(x=10, y=280)
-        self.versucheLable = tk.Label(self.root, fg="green", bg="black", text=str(self.armTries), font=("Ubuntu", 30))
+        self.versucheLable = tk.Label(self.root, fg="green", bg="black", text=str(self.bomTries), font=("Ubuntu", 30))
         self.versucheLable.place(x=210, y=280)
-
         self.inputLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 30))
         self.inputLable.place(x=180, y=220)
-
         self.infoLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 30))
         self.infoLable.place(x=10, y=350)
-        print("armbomb")
+        self.root.update()
 
     def defuseBomb(self):
-        print("test2")
+        self.ledStuff.stopBlueBlinker()
+        self.ledStuff.startRedBlinker()
+        self.ledStuff.stopStripeBlinker()
+        self.ledStuff.setRGB((255, 0, 0))
         self.clearFrame()
         self.timerLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 50))
         self.timerLable.pack()
@@ -266,26 +310,94 @@ class logicWindow:
         tk.Label(self.root, fg="green", bg="black", text=self.defCode, font=("Ubuntu", 15)).place(x=100, y=160)
         tk.Label(self.root, fg="green", bg="black", text="Eingabe:", font=("Ubuntu", 30)).place(x=10, y=220)
         tk.Label(self.root, fg="green", bg="black", text="Versuche:", font=("Ubuntu", 30)).place(x=10, y=280)
-        self.versucheLable = tk.Label(self.root, fg="green", bg="black", text=str(self.bomTries), font=("Ubuntu", 30))
+        self.versucheLable = tk.Label(self.root, fg="green", bg="black", text=str(self.armTries), font=("Ubuntu", 30))
         self.versucheLable.place(x=210, y=280)
-
         self.inputLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 30))
         self.inputLable.place(x=180, y=220)
-
         self.infoLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 30))
         self.infoLable.place(x=10, y=350)
-        self.mp = threading.Thread(target=self.timer)
+        self.mp = threading.Thread(target=self.timer, daemon=True)
         self.mp.start()
-
+        self.ledStuff.startStripeBlinker()
 
     def timer(self):
+        global stop
         ctime = self.selectedTime * 60
-        while ctime and not self.stop:
+        while ctime and not stop:
+            if stop:
+                break
             mins, secs = divmod(ctime, 60)
             timeformat = '{:02d}:{:02d}'.format(mins, secs)
             self.timerLable.configure(text=timeformat)
             time.sleep(1)
             ctime -= 1
+        if ctime == 0:
+            self.timerLable.configure(text="00:00")
+            self.root.update()
+            self.explosion()
 
-#time.sleep(4)
+    def explosion(self):
+        global stop,stopLock
+        self.infoLable.configure(text="Bombe ist explodiert")
+        self.root.update()
+        time.sleep(0.2)
+        self.inputLock = True
+        stop = True
+        stopLock =True
+        try:
+            self.inputLockThread.join()
+        except Exception:
+            pass
+        stopLock = False
+        try:
+            self.mp.join()
+        except Exception:
+            pass
+        self.ledStuff.stopAllBlinkers()
+        self.ledStuff.turnOffAll()
+        self.ledStuff.turnRedOn()
+        self.ledStuff.pixelFill((255, 0, 0))
+        time.sleep(10)
+        self.reset()
+        # play audio
+
+    def reduceTries(self):
+        if not self.armed:
+            if self.bomTries - 1 > 0:
+                self.bomTries = self.bomTries - 1
+                self.versucheLable.configure(text=self.bomTries)
+                self.infoLable.configure(
+                    text="Falsche eingabe \n eingabe für: " + str(10 * (4 - self.bomTries + 1)) + "sekunden gespert")
+                self.inputLockThread = threading.Thread(target=self.lockInput, args=(10 * (4 - self.armTries + 1),), daemon=True)
+                self.inputLockThread.start()
+            else:
+                self.infoLable.configure(text="Bomb disabled to many tries")
+        else:
+            if self.armTries - 1 > 0:
+                self.armTries = self.armTries - 1
+                self.versucheLable.configure(text=self.armTries)
+                self.infoLable.configure(
+                    text="Falsche eingabe \n eingabe für: " + str(10 * (4 - self.armTries + 1)) + " sekunden espert")
+                self.inputLockThread = threading.Thread(target=self.lockInput, args=(10 * (4 - self.bomTries + 1),),
+                                                        daemon=True)
+                self.inputLockThread.start()
+            else:
+                self.infoLable.configure(text="Bomb exploded to many defuse tries")
+                self.explosion()
+
+    def lockInput(self, ctime):
+        global stopLock
+        self.inputLock = True
+        i = 0
+        while i < 2 and not stopLock:
+            i = i + 1
+            time.sleep(1)
+            if stopLock:
+                break
+        self.inputLock = False
+        if not stopLock:
+            self.infoLable.configure(text="")
+
+
+# time.sleep(4)
 tmp = logicWindow()
