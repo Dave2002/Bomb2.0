@@ -19,16 +19,19 @@ class Led:
         self._stripeRGB = (0,0,0)
         self._stripeBlinkerStop = False
         self._stripeIntervall = 1
+        self._stripeBlinkerIsAlive = False
 
         # Blue outside Blinker Variables
         self._blueBlinkerThread = None
         self._blueBlinkerStop = False
         self._blueBlinkerInterval = 1
+        self._blueBlinkerIsAlive = False
 
         # Red outside Blinker Variables
         self._redBlinkerThread = None
         self._redBlinkerStop = False
         self._redBlinkerInterval = 1
+        self._redBlinkerIsAlive = False
 
     # Simple stuff
 
@@ -64,12 +67,19 @@ class Led:
 
 
     # Blinker logic
+
+    def getBlueIsAlive(self):
+        return self._blueBlinkerIsAlive
+
+    def getRedIsAlive(self):
+        return self._redBlinkerIsAlive
     def setBlueInterval(self,interval):
         self._blueBlinkerInterval = interval
 
     def startBlueBlinker(self):
         self._blueBlinkerThread = threading.Thread(target=self._blueBlinker,daemon=True)
         self._blueBlinkerThread.start()
+        self._blueBlinkerIsAlive = True
     def _blueBlinker(self):
         while not self._blueBlinkerStop:
             GPIO.output(23, True)
@@ -83,8 +93,9 @@ class Led:
             self._blueBlinkerThread.join()
         except Exception:
             pass
+        self._blueBlinkerIsAlive = False
         self._blueBlinkerStop = False
-#        self.turnOffBlue()
+
 
     def setRedInterval(self,interval):
         self._redBlinkerInterval = interval
@@ -93,6 +104,7 @@ class Led:
     def startRedBlinker(self):
         self._redBlinkerThread = threading.Thread(target=self._redBlinker,daemon=True)
         self._redBlinkerThread.start()
+        self._redBlinkerIsAlive = True
 
     def _redBlinker(self):
         while not self._redBlinkerStop:
@@ -108,7 +120,12 @@ class Led:
         except Exception:
             pass
         self._redBlinkerStop = False
- #       self.turnOffRed()
+        self._redBlinkerIsAlive = False
+
+    #Strip Blinker stuff
+
+    def getStripBlinkerAlive(self):
+        return self._stripeBlinkerIsAlive
 
 
     def setRGB(self,rgb):
@@ -116,9 +133,34 @@ class Led:
 
     def setStripInterval(self,intervall):
         self._stripeIntervall = intervall
-    def startStripeBlinker(self):
-        self._stripeBlinkerThread = threading.Thread(target=self._stripeBlinker,daemon=True)
-        self._stripeBlinkerThread.start()
+
+    def startStripeBlinker(self,pulse):
+        if not pulse:
+            self._stripeBlinkerThread = threading.Thread(target=self._stripeBlinker,daemon=True)
+            self._stripeBlinkerThread.start()
+        else:
+            self._stripeBlinkerThread = threading.Thread(target=self._pulsStripe,daemon=True)
+            self._stripeBlinkerThread.start()
+        self._stripeBlinkerIsAlive = True
+
+    def _pulsStripe(self):
+        while not self._stripeBlinkerStop:
+            tmp = [0, 0, 0]
+            tmp[0] = self._stripeRGB[0]
+            tmp[1] = self._stripeRGB[1]
+            tmp[2] = self._stripeRGB[2]
+            while sum(tmp) > 20:
+                tmp[0] = min(tmp[0] - tmp[0] * 0.1, 255)
+                tmp[1] = min(tmp[1] - tmp[1] * 0.1, 255)
+                tmp[2] = min(tmp[2] - tmp[2] * 0.1, 255)
+                time.sleep(0.1)
+                self.pixelFill(list(tmp))
+            while sum(tmp) < 250:
+                tmp[0] = min(tmp[0] + tmp[0] * 0.1, 255)
+                tmp[1] = min(tmp[1] + tmp[1] * 0.1, 255)
+                tmp[2] = min(tmp[2] + tmp[2] * 0.1, 255)
+                time.sleep(0.1)
+                self.pixelFill(list(tmp))
 
     def stopStripeBlinker(self):
         self._stripeBlinkerStop = True
@@ -127,7 +169,9 @@ class Led:
         except Exception:
             pass
         self._stripeBlinkerStop = False
-  #      self.stripeOff()
+        self._stripeBlinkerIsAlive = False
+
+
 
     def _stripeBlinker(self):
         while not self._stripeBlinkerStop:
@@ -135,6 +179,7 @@ class Led:
             time.sleep(self._stripeIntervall/2)
             self._pixel.fill((0,0,0))
             time.sleep(self._stripeIntervall/2)
+
 
 
 """
