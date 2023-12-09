@@ -187,7 +187,6 @@ class logicWindow:
         if not self.isInGame:
             if key.keysym in ["1", "2", "3"]:
                 if self.selectedGame is None:
-
                     self.selection = int(key.char) - 1
                     self.selectLable.configure(text="<--")
                     self.selectLable.place(x=160 + self.getLableWidght(key)[0], y=self.hoehe[int(key.char) - 1])
@@ -302,11 +301,14 @@ class logicWindow:
                 else:
                     self.input.append(key.keysym)
     def playAudio(self,name):
-        pos = ["Boom"]
-        print(name)
+        pos = ["Boom","Arm","Defuse"]
+
         if name == "Boom":
-            file = "explosion.mp3"
-            print("selected file")
+            file = "boom.mp3"
+        elif name == "Arm":
+            file = "arm.mp3"
+        elif name == "Defuse":
+            file = "defuse.mp3"
         if name in pos:
             pygame.mixer.music.load(file)
             pygame.mixer.music.play()
@@ -384,6 +386,7 @@ class logicWindow:
         #self.ledStuff.startBlueBlinker()
 
         #self.ledStuff.setRGB((0, 255, 0))
+        threading.Thread(target=self.playAudio, args=("Arm",)).start()
         self.clearFrame()
         self.timerLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 50))
         self.timerLable.pack()
@@ -511,6 +514,7 @@ class logicWindow:
         except Exception:
             pass
         self.root.update()
+        threading.Thread(target=self.playAudio, args=("Defuse",)).start()
         time.sleep(20)
         self.reset()
 
