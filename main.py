@@ -28,20 +28,28 @@ def codeGen(x):
 
 stop = False
 stopLock = False
-
+stopBlue = False
+stopRed = False
 class logicWindow:
 
     def __init__(self):
-
+        self.extraInput =[]
         #self.ledStuff = led.Led()
-
+        self.blueCounting = False
+        self.redCounting = False
+        self.blueCounter = None
+        self.redCounter = None
+        self.redAmount = 0
+        self.blueAmount = 0
+        self.redTimeLable = None
+        self.blueTimeLable = None
         self.mp = None
         self.stop = False
         self.inputLockThread = None
         self.blinker = None
         self.timeLable1 = None
         self.timeLable1 = None
-        self.counter1 = False
+        self.current1 = False
         self.counter2 = False
         # arm/defu labels
         self.timerLable = None
@@ -101,8 +109,8 @@ class logicWindow:
         self.root.mainloop()
 
     def reset(self):
-        global stop
-
+        global stop,stopRed,stopBlue
+        self.extraInput = []
         self.clearFrame()
 
         stop = True
@@ -113,7 +121,25 @@ class logicWindow:
 
         #self.ledStuff.stopAllBlinkers()
         #self.ledStuff.turnOffAll()
+        self.blueCounting = False
+        self.redCounting = False
+        stopRed = True
+        try:
+            self.redCounter.join()
+        except Exception:
+            pass
+        stopRed = False
 
+        stopBlue = True
+        try:
+            self.blueCounter.join()
+        except Exception:
+            pass
+        stopBlue = False
+
+
+        self.redAmount = 0
+        self.blueAmount = 0
         self.armed = False
         self.mp = None
         stop = False
@@ -155,6 +181,7 @@ class logicWindow:
             self.pressedKeys.remove(key.keysym)
 
     def gameSelectInput(self, key):
+        global stopRed,stopBlue
         if self.inputLock:
             return
         if not self.isInGame:
@@ -223,7 +250,7 @@ class logicWindow:
                         if "".join(self.input) == self.defCode:
                             self.input = []
 
-                            self.reset()
+                            self.bombDefused()
                         else:
 
                             self.reduceTries()
@@ -240,6 +267,36 @@ class logicWindow:
                     if "".join(self.input) == "6969":
                         self.reset()
                     self.infoLable.configure(text="BLUE")
+                    # led red off
+                    # led blue
+                else:
+                    self.input.append(key.keysym)
+            elif self.selectedGame == "Bunker":
+                if key.keysym == "Delete":
+                    self.input = []
+                    # led red
+                    # led blue off
+                    stopBlue = True
+                    try:
+                        self.blueCounter.join()
+                    except Exception:
+                        pass
+                    stopBlue = False
+                    if not self.redCounting:
+                        self.redCounter = threading.Thread(target=self.redTimer,daemon=True)
+                        self.redCounter.start()
+                elif key.keysym == "Return":
+                    if "".join(self.input) == "6969":
+                        self.reset()
+                    stopRed = True
+                    try:
+                        self.redCounter.join()
+                    except Exception:
+                        pass
+                    stopRed = False
+                    if not self.blueCounting:
+                        self.blueCounter = threading.Thread(target=self.blueTimer, daemon=True)
+                        self.blueCounter.start()
                     # led red off
                     # led blue
                 else:
@@ -262,7 +319,6 @@ class logicWindow:
             self.armBomb()
             self.armTries = 3
         elif self.selectedGame == "Bunker":
-            pass
             self.isInGame = True
             self.bunker()
         elif self.selectedGame == "Flage":
@@ -444,6 +500,67 @@ class logicWindow:
         self.infoLable.place(x=200, y=200)
 
 
+    def bombDefused(self):
+        global stop
+        self.infoLable.configure(text="Die Bombe wurde entschärft")
+        #Leds green machen
+        #Defuse sound abspielen
+        stop = True
+        try:
+            self.mp.join()
+        except Exception:
+            pass
+        self.root.update()
+        time.sleep(20)
+        self.reset()
+
+    def redTimer(self):
+        global stopRed
+        ctime = self.redAmount
+        self.redCounting = True
+        while True:
+            if stopRed:
+                self.redAmount = ctime
+                self.redCounting = False
+                break
+            mins, secs = divmod(ctime, 60)
+            timeformat = '{:02d}:{:02d}'.format(mins, secs)
+            self.redTimeLable.configure(text=timeformat)
+            time.sleep(1)
+            ctime += 1
+
+    def blueTimer(self):
+        global stopBlue
+        self.blueCounting = True
+        ctime = self.blueAmount
+        while True:
+            if stopBlue:
+                self.blueCounting = False
+                self.blueAmount = ctime
+                break
+            mins, secs = divmod(ctime, 60)
+            timeformat = '{:02d}:{:02d}'.format(mins, secs)
+            self.blueTimeLable.configure(text=timeformat)
+            time.sleep(1)
+            ctime += 1
+
+    def bunker(self):
+        self.clearFrame()
+        tk.Label(self.root, fg="green", bg="black", text="Bunker:", font=("Ubuntu", 50)).pack()
+        tk.Label(self.root, fg="green", bg="black", text="Blue:", font=("Ubuntu", 90)).place(x=10, y=180)
+        #tk.Label(self.root, fg="green", bg="black", text=self.armCode, font=("Ubuntu", 15)).place(x=100, y=160)
+        tk.Label(self.root, fg="green", bg="black", text="Red:", font=("Ubuntu", 90)).place(x=25, y=340)
+        #tk.Label(self.root, fg="green", bg="black", text="Versuche:", font=("Ubuntu", 30)).place(x=10, y=280)
+
+        self.blueTimeLable = tk.Label(self.root, fg="green", bg="black", text="00:00", font=("Ubuntu", 90))
+        self.blueTimeLable.place(x=320, y=180)
+
+        self.redTimeLable = tk.Label(self.root, fg="green", bg="black", text="00:00", font=("Ubuntu", 90))
+        self.redTimeLable.place(x=320, y=340)
+
+        self.infoLable = tk.Label(self.root, fg="green", bg="black", text="", font=("Ubuntu", 30))
+        self.infoLable.place(x=10, y=350)
+        self.root.update()
 
 # time.sleep(4)
 tmp = logicWindow()
